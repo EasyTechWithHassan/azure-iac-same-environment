@@ -1,0 +1,55 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "environment": {
+      "type": "string",
+      "allowedValues": [ "test", "prod" ],
+      "metadata": { "description": "Which copy of the environment: test or prod" }
+    }
+  },
+  "variables": {
+    "suffix": "[take(uniqueString(resourceGroup().id), 5)]",
+    "siteName": "[format('swa-tailwind-orders-{0}', parameters('environment'))]",
+    "storageName": "[format('sttworders{0}{1}', parameters('environment'), variables('suffix'))]",
+    "logsName": "[format('log-tailwind-orders-{0}-{1}', parameters('environment'), variables('suffix'))]",
+    "tags": { "environment": "[parameters('environment')]", "app": "tailwind-orders" }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Web/staticSites",
+      "apiVersion": "2024-04-01",
+      "name": "[variables('siteName')]",
+      "location": "[resourceGroup().location]",
+      "tags": "[variables('tags')]",
+      "sku": { "name": "Free", "tier": "Free" },
+      "properties": {}
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2023-05-01",
+      "name": "[variables('storageName')]",
+      "location": "[resourceGroup().location]",
+      "tags": "[variables('tags')]",
+      "kind": "StorageV2",
+      "sku": { "name": "Standard_LRS" },
+      "properties": {
+        "accessTier": "Hot",
+        "supportsHttpsTrafficOnly": true,
+        "minimumTlsVersion": "TLS1_2",
+        "allowBlobPublicAccess": false
+      }
+    },
+    {
+      "type": "Microsoft.OperationalInsights/workspaces",
+      "apiVersion": "2023-09-01",
+      "name": "[variables('logsName')]",
+      "location": "[resourceGroup().location]",
+      "tags": "[variables('tags')]",
+      "properties": {
+        "sku": { "name": "PerGB2018" },
+        "retentionInDays": 30
+      }
+    }
+  ]
+}
